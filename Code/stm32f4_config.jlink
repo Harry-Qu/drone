@@ -1,0 +1,5 @@
+h 
+loadbin build/drone-iii-401.bin 0x8000000 
+r 
+g 
+q
