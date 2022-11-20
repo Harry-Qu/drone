@@ -3,13 +3,15 @@
  *  @details    提供控制相关任务，包含对遥控器数据解算，计算期望角度，PID计算，动能分配，输出PWM
  *  @author     Harry-Qu
  *  @date       2022/10/28
- *  @version    1.0
+ *  @version    1.0.1
  *  @par        日志
+ *                  1.0.0   |   实现基本控制功能
+ *                  1.0.1   |   新增转速限制宏定义LIMIT_MOTOR_SPEED
 */
 
 #include "main.h"
 #include "pid.h"
-
+#include "driver_motor.h"
 
 #ifndef APP_CONTROL_H
 #define APP_CONTROL_H
@@ -19,8 +21,9 @@
 #define MOTOR_BR 0
 #define MOTOR_BL 3
 
-#define HOVER_MOTOR_SPEED 2800.0f //悬停时电机转速，54
-#define IDLE_MOTOR_SPEED 800.0f  //怠速时电机速度
+#define HOVER_MOTOR_SPEED 2800 //悬停时电机转速，2800/10000
+#define IDLE_MOTOR_SPEED 800  //怠速时电机速度
+#define LIMIT_MOTOR_SPEED 6000 //限制最高转速
 
 #define MAX_ROLL_ANGLE 25.0f    //最大横滚角度（角度制） degree
 #define MAX_PITCH_ANGLE 25.0f   //最大俯仰角度（角度制） degree
@@ -60,13 +63,17 @@
 #define PID_HEIGHT_KD 0.0f
 #define PID_HEIGHT_INTEGRAL_LIMIT 0.0f
 
-enum FLY_MODE{
+#if (MAX_MOTOR_SPEED < LIMIT_MOTOR_SPEED)
+#error "限制转速必须小于等于最大转速"
+#endif
+
+enum FLY_MODE {
     STOP = 0,   //停桨模式
     RUNNING,    //开桨状态
 
 };
 
-enum FLY_STATE{
+enum FLY_STATE {
     INIT = 0,   // 初始化中
     MANUAL_CALIBRATION,  // 人工校准状态
     READY,      // 就绪状态

@@ -3,8 +3,10 @@
  *  @details    提供控制相关任务，包含对遥控器数据解算，计算期望角度，PID计算，动能分配，输出PWM
  *  @author     Harry-Qu
  *  @date       2022/10/28
- *  @version    1.0
+ *  @version    1.0.1
  *  @par        日志
+ *                  1.0.0   |   实现基本控制功能
+ *                  1.0.1   |   新增限制最大转速功能
 */
 
 /**
@@ -34,6 +36,7 @@
 #include "driver_dbus.h"
 #include "driver_motor.h"
 #include "driver_rgb.h"
+#include "sdk_math.h"
 
 
 enum FLY_MODE flyMode = STOP;   //飞行模式（锁定or解锁电机）
@@ -51,6 +54,11 @@ static void app_control_cal_motorSpeed_hover(void);
 static void app_control_cal_motorSpeed_moving(void);
 
 static void app_control_cal_motorSpeed(void);
+
+/**
+ * 对电机转速进行限制，限制范围为[0, LIMIT_MOTOR_SPEED]
+ */
+void app_control_limit_motorSpeed(void);
 
 /**
  * 电机转速测试函数，仅在测试中使用！！！！！
@@ -183,7 +191,7 @@ void app_control_cal_TestSpeed(void) {
                         motorSpeed[1] =
                         motorSpeed[2] =
                         motorSpeed[3] =
-                                ((float) rc_data.ch3 / DRIVER_DBUS_RC_CH_MAX) * MOTOR_MAX_SPEED * 0.8f;
+                                ((float) rc_data.ch3 / DRIVER_DBUS_RC_CH_MAX) * MAX_MOTOR_SPEED * 0.8f;
                     }
                     break;
                 }
@@ -257,7 +265,6 @@ void app_control_cal_motorSpeed_moving(void) {
 
 }
 
-
 void app_control_cal_motorSpeed(void) {
     switch (flyMode) {
         case STOP:
@@ -297,20 +304,24 @@ void app_control_cal_motorSpeed(void) {
         default:
             break;
     }
+    app_control_limit_motorSpeed();
 }
 
-void app_control_limit_motor() {
-
+void app_control_limit_motorSpeed(void) {
+    LIMIT(motorSpeed[0], 0, LIMIT_MOTOR_SPEED);
+    LIMIT(motorSpeed[1], 0, LIMIT_MOTOR_SPEED);
+    LIMIT(motorSpeed[2], 0, LIMIT_MOTOR_SPEED);
+    LIMIT(motorSpeed[3], 0, LIMIT_MOTOR_SPEED);
 }
 
 void app_control_transmitMotorSpeed(void) {
     struct {
         uint16_t pwm[4];
     } sendData;
-    sendData.pwm[0] = (uint16_t) (motorSpeed[0] / MOTOR_MAX_SPEED * 10000);
-    sendData.pwm[1] = (uint16_t) (motorSpeed[1] / MOTOR_MAX_SPEED * 10000);
-    sendData.pwm[2] = (uint16_t) (motorSpeed[2] / MOTOR_MAX_SPEED * 10000);
-    sendData.pwm[3] = (uint16_t) (motorSpeed[3] / MOTOR_MAX_SPEED * 10000);
+    sendData.pwm[0] = (uint16_t) (motorSpeed[0] / MAX_MOTOR_SPEED * 10000);
+    sendData.pwm[1] = (uint16_t) (motorSpeed[1] / MAX_MOTOR_SPEED * 10000);
+    sendData.pwm[2] = (uint16_t) (motorSpeed[2] / MAX_MOTOR_SPEED * 10000);
+    sendData.pwm[3] = (uint16_t) (motorSpeed[3] / MAX_MOTOR_SPEED * 10000);
     sdk_ano_transmit_pwm(&sendData);
 }
 
@@ -318,12 +329,13 @@ void app_control(void) {
     driver_dbus_Analysis();
 //    printf("%d %d %d %d\n", rc_data.ch0, rc_data.ch1, rc_data.ch2, rc_data.ch3);
     AHRS_ConvertQuatToDegree(&attitude, &attitudeAngle);
+
     app_control_modifyFlyMode();
 //    printf("%d %d\n", flyMode, flyState);
-    app_control_cal_motorSpeed();
 
+    app_control_cal_motorSpeed();
 //    app_control_cal_TestSpeed();
-    app_control_limit_motor();
+
     driver_motor_set_speed(motorSpeed);
 }
 
