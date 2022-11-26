@@ -3,10 +3,11 @@
  *  @details    提供控制相关任务，包含对遥控器数据解算，计算期望角度，PID计算，动能分配，输出PWM
  *  @author     Harry-Qu
  *  @date       2022/10/28
- *  @version    1.0.1
+ *  @version    1.0.2
  *  @par        日志
  *                  1.0.0   |   实现基本控制功能
  *                  1.0.1   |   新增限制最大转速功能
+ *                  1.0.2   |   修改电机转速测试代码中满油门值为限制最大转速值
 */
 
 /**
@@ -186,12 +187,12 @@ void app_control_cal_TestSpeed(void) {
                 case MOVING:
                     // 运动状态
                 {
-                    if (rc_data.ch3 > 0) {
+                    if (rc_data.ch3 >= 0) {
                         motorSpeed[0] =
                         motorSpeed[1] =
                         motorSpeed[2] =
                         motorSpeed[3] =
-                                ((float) rc_data.ch3 / DRIVER_DBUS_RC_CH_MAX) * MAX_MOTOR_SPEED * 0.8f;
+                                ((float) rc_data.ch3 / DRIVER_DBUS_RC_CH_MAX) * LIMIT_MOTOR_SPEED;
                     }
                     break;
                 }
@@ -318,10 +319,12 @@ void app_control_transmitMotorSpeed(void) {
     struct {
         uint16_t pwm[4];
     } sendData;
+
     sendData.pwm[0] = (uint16_t) (motorSpeed[0] / MAX_MOTOR_SPEED * 10000);
     sendData.pwm[1] = (uint16_t) (motorSpeed[1] / MAX_MOTOR_SPEED * 10000);
     sendData.pwm[2] = (uint16_t) (motorSpeed[2] / MAX_MOTOR_SPEED * 10000);
     sendData.pwm[3] = (uint16_t) (motorSpeed[3] / MAX_MOTOR_SPEED * 10000);
+//    printf("%d %d %d %d\n", sendData.pwm[0], sendData.pwm[1], sendData.pwm[2], sendData.pwm[3]);
     sdk_ano_transmit_pwm(&sendData);
 }
 

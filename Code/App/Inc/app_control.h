@@ -21,7 +21,7 @@
 #define MOTOR_BR 0
 #define MOTOR_BL 3
 
-#define HOVER_MOTOR_SPEED 2800 //悬停时电机转速，2800/10000
+#define HOVER_MOTOR_SPEED 4000 //悬停时电机转速，2800/10000
 #define IDLE_MOTOR_SPEED 800  //怠速时电机速度
 #define LIMIT_MOTOR_SPEED 6000 //限制最高转速
 
@@ -65,6 +65,10 @@
 
 #if (MAX_MOTOR_SPEED < LIMIT_MOTOR_SPEED)
 #error "限制转速必须小于等于最大转速"
+#endif
+
+#if (MAX_MOTOR_SPEED < HOVER_MOTOR_SPEED)
+#error "悬停转速转速必须小于等于最大转速"
 #endif
 
 enum FLY_MODE {
