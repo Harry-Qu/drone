@@ -25,10 +25,10 @@ void app_debug_ano(void) {
 //    printf("%lu\n", HAL_GetTick());
 //    driver_gy86_TransmitAttitude_Quat(&attitude);
     app_control_transmitMotorSpeed();
-    driver_gy86_IMU_TransmitCalibratedData();
+    driver_MPU6050_TransmitCalibratedData();
 //    AHRS_ConvertQuatToDegree(&attitudeTest, &attitudeAngleTest);
     driver_gy86_TransmitAttitude_Angle(&attitudeAngle);
-    driver_gy86_MAG_TransmitCalibratedData_Custom();
+    driver_HMC5883_TransmitCalibratedData_Custom();
 
     if (isReply) {
         isReply = 0;
@@ -61,7 +61,7 @@ void app_debug_ano(void) {
 //    sdk_ano_transmit_custom_data(0xF7, 6, (uint8_t *) &sendData2);
 //    printf("%.2f\n", attitudeTest2.a);
 
-//    driver_gy86_MAG_TransmitRawAndCalibratedData_Custom();
+//    driver_HMC5883_TransmitRawAndCalibratedData_Custom();
 }
 
 

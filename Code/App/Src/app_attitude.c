@@ -22,9 +22,9 @@
 OS_EVENT *sem_attitude_task;
 
 void app_attitude_init(void) {
-    driver_gy86_Init(GY86_IMU | GY86_MAG);  //初始化GY86各芯片
+    driver_gy86_Init(GY86_IMU | GY86_MAG | GY86_APG);  //初始化GY86各芯片
 
-//    driver_gy86_MAG_MeasureError_8shape();
+//    driver_HMC5883_MeasureError_8shape();
 
     driver_gy86_Attitude_InitQuat_MAG();    //计算一个初始的四元数
 }
@@ -47,8 +47,8 @@ void app_attitude_task(void *args) {
     while (1) {
         OSSemPend(sem_attitude_task, 0, &err);
         OS_TRACE_MARKER_START(2);
-        driver_gy86_IMU_RefreshData();
-        driver_gy86_MAG_RefreshData();
+        driver_MPU6050_RefreshData();
+        driver_HMC5883_RefreshData();
 //        driver_gy86_Attitude_Update_Madgwick();
         AHRS_MadgWickTest(&attitude, imu_calibrated_data.acc, imu_calibrated_data.gyro, mag_calibrated_data);
 //        driver_gy86_Attitude_Update_Mahony();
