@@ -93,7 +93,8 @@ downloaddo:
 
 jlinkfile: Makefile
 	echo "h \n\
-loadbin build/$(TARGET).bin 0x8000000 \n\
+LoadFile build/$(TARGET).bin 0x8000000 \n\
+VerifyBin build/$(TARGET).bin 0x8000000 \n\
 r \n\
 g \n\
 q" > $(JLINK_CONFIG_FILENAME)
@@ -102,5 +103,17 @@ q" > $(JLINK_CONFIG_FILENAME)
 view:
 	open -a Systemview.app
 # 在电脑上打开SystemView软件
+```
+
+JLink命令解释
+
+```
+h 	halt:Halt CPU.
+LoadFile build/drone-iii-401.bin 0x8000000 	Load data file into target memory.
+VerifyBin build/drone-iii-401.bin 0x8000000 		Verfy if specified .bin file is at the specified target memory location.
+r 	reset:Reset CPU.
+g 	go:Start CPU if halted.
+q		quit:Close J-Link connection and quit.
+
 ```
 
