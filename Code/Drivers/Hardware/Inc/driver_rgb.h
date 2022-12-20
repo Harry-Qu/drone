@@ -46,9 +46,16 @@ enum RGB_COLOR {
 //pink=blue+red
 //bluegrass=blue+green
 
-
+/**
+ * 设置RGB灯颜色
+ * @param color 颜色
+ * @param lightTimes 每秒闪烁次数。0:常亮; 1-5:闪烁
+ */
 void driver_rgb_setColor(enum RGB_COLOR color, uint8_t lightTimes);
 
+/**
+ * GRB灯初始化
+ */
 void driver_rgb_init(void);
 
 #else   //DEVICE_RGB_EN
