@@ -3,7 +3,7 @@
  *  @details    基于SSD1306开发
  *  @author     Asn，Evan-GH, Harry-Qu
  *  @date       2019.11.5
- *  @version    3.4
+ *  @version    3.4.1
  *  @par        Copyright (c): Asn，Evan-GH, Harry-Qu
  *  @par        日志
                 V1.0 移植中景园oled例程成功
@@ -18,6 +18,7 @@
 				V3.2提高数字、字符串等显示效率，修改显示器刷新顺序，改为行刷新模式，显示时先生成待显示像素矩阵，一次性写入OLED内存中。
 				V3.3新增溢出判断，当待显示数字、字符串超出屏幕宽度时，溢出部分以省略号表示。
 				V3.4修复部分整数，浮点数显示的bug
+				V3.4.1取消驱动代码的裁剪性
 */
 
 
@@ -28,7 +29,6 @@
 #include "sdk_i2c.h"
 #include "app_cfg.h"
 
-#if DEBUG_OLED_EN > 0
 
 //OLED相关宏定义
 
@@ -896,7 +896,7 @@ void driver_oled_Init(void) {
             };
     driver_oled_Write_Cmds(OLED_init_cmd, sizeof(OLED_init_cmd));
     driver_oled_Clear();
-    printf("oled init.\n");
+//    printf("oled init.\n");
 }
 
 
@@ -911,4 +911,3 @@ void driver_oled_Init(void) {
 #undef BLOCK_SIZE
 #undef Horizontal
 
-#endif
