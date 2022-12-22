@@ -3,9 +3,10 @@
  *  @details    提供HMC5883初始化，校准，数据获取等功能
  *  @author     Harry-Qu
  *  @date       2022/11/23
- *  @version    1.0
+ *  @version    1.0.1
  *  @par        日志
  *              1.0     |       完成HMC5883驱动基本功能
+ *              1.0.1   |       修复磁力计状态结构体命名错误
  *
  *  @code       示例代码
  *              {
@@ -21,7 +22,7 @@
 #include "sdk_ano.h"
 #include "sdk_i2c.h"
 
-enum MSG_STATUS_CODE magStatus;
+enum MAG_STATUS_CODE magStatus;
 
 mag_t mag_raw_data; //磁力计原始数据
 mag_t mag_calibrated_data;  //磁力计校准数据
@@ -189,7 +190,7 @@ uint8_t driver_HMC5883_GetRawData(void) {
     uint8_t rawData[6];
     uint8_t status;
 
-    if (magStatus == MSG_INIT_ERROR) {
+    if (magStatus == MAG_INIT_ERROR) {
         return 1;
     }
     status = driver_HMC5883_receiveData_memory(0x03, rawData, 6, 10);
@@ -284,91 +285,6 @@ void driver_HMC5883_RecordGroundData(void) {
     mag_ground_data.z = mag_calibrated_data.z;
 
 }
-
-//void driver_HMC5883_MeasureError_8shape(void) {
-//    uint32_t lastTick = 0;
-//
-//    float detaTime = 0.05f;
-//    float minRadian = 0, maxRadian = 0, radian = 0;   //当前转动的最小角度与最大角度，用于计算是否转满一圈
-//    float ax = 0, ay = 0, az = 0, recipNorm;
-//    uint8_t finishAxisNum = 0;    // 已校准的轴的数量
-//    uint8_t finishAxis = 0; // 已校准的轴,按位表示,bit0=x,bit1=y,bit2=z
-//    uint8_t nowAxis = 0;    //正在校准的轴,按位表示
-//
-//    while (finishAxisNum < 1) {
-//        driver_MPU6050_RefreshData();
-//        driver_HMC5883_GetRawData();
-//
-//        if (lastTick) {
-//            detaTime = (HAL_GetTick() - lastTick) / 1000.0f;
-//        }
-//        lastTick = HAL_GetTick();
-//
-////        recipNorm = invSqrt(
-////                SQR(imu_calibrated_data.acc.x) + SQR(imu_calibrated_data.acc.y) + SQR(imu_calibrated_data.acc.z));
-//        ax = imu_calibrated_data.acc.x;
-//        ay = imu_calibrated_data.acc.y;
-//        az = imu_calibrated_data.acc.z;
-//
-////        printf("%.2f %.2f %.2f\n", imu_calibrated_data.gyro.x,  imu_calibrated_data.gyro.y,
-////               imu_calibrated_data.gyro.z);
-//
-//        if (fabsf(az) > 0.95f && ((finishAxis & 4) == 0)) {
-//            if (nowAxis != 4) {
-//                nowAxis = 4;
-//                radian = 0;
-//                minRadian = 0;
-//                maxRadian = 0;
-//            }
-//            RECORD_EXTREME_VALUE(mag_raw_data.x, mag_min_data.x, mag_max_data.x);
-//            RECORD_EXTREME_VALUE(mag_raw_data.y, mag_min_data.y, mag_max_data.y);
-//            radian += imu_calibrated_data.gyro.z * detaTime;
-//            RECORD_EXTREME_VALUE(radian, minRadian, maxRadian);
-////            printf("z %.2f %.2f %.2f %d\n", radian, minRadian, maxRadian, finishAxis);
-//        }
-//
-//        if (maxRadian - minRadian > 1.3 * PI) {
-//            finishAxis |= nowAxis;
-//            finishAxisNum++;
-////            printf("完成一个轴.\n");
-//        }
-//
-//        HAL_Delay(15);
-//    }
-//
-//    float xLength = mag_max_data.x - mag_min_data.x,
-//            yLength = mag_max_data.y - mag_min_data.y,
-//            zLength = mag_max_data.z - mag_min_data.z;
-//
-//    printf("%f %f %f\n", xLength, yLength, zLength);
-//
-//    if ((finishAxis & 1) == 0 && mag_max_data.x < 1 && mag_min_data.x > -1) {
-//        printf("x:%.2f %.2f\n", mag_max_data.x, mag_min_data.x);
-//        mag_offset_error.x = (mag_max_data.x + mag_min_data.x) / 2;
-//        mag_scale_error.x = STANDAR_VERTICAL_GAUSS / xLength * 2;
-//    } else {
-//        mag_scale_error.x = 1;
-//    }
-//
-//    if ((finishAxis & 1) == 0 && mag_max_data.y < 1 && mag_min_data.y > -1) {
-//        printf("y:%.2f %.2f\n", mag_max_data.y, mag_min_data.y);
-//        mag_offset_error.y = (mag_max_data.y + mag_min_data.y) / 2;
-//        mag_scale_error.y = STANDAR_VERTICAL_GAUSS / yLength * 2;
-//    } else {
-//        mag_scale_error.y = 1;
-//    }
-//
-//    if ((finishAxis & 6) == 0 && mag_max_data.z < 1 && mag_min_data.z > -1) {
-//        printf("z:%.2f %.2f\n", mag_max_data.z, mag_min_data.z);
-//        mag_offset_error.z = (mag_max_data.z + mag_min_data.z) / 2;
-//        mag_scale_error.z = STANDAR_HORIZONTAL_GAUSS / zLength * 2;
-//    } else {
-//        mag_scale_error.z = 1;
-//    }
-//
-//    printf("offset error:%.4ff,%.4ff,%.4ff\n", mag_offset_error.x, mag_offset_error.y, mag_offset_error.z);
-//    printf("scale error:%.4ff,%.4ff,%.4ff\n", mag_scale_error.x, mag_scale_error.y, mag_scale_error.z);
-//}
 
 void driver_HMC5883_CalculateError_8shape(void) {
     float xLength = mag_max_data.x - mag_min_data.x,

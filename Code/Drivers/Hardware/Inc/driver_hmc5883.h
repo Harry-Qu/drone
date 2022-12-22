@@ -3,9 +3,11 @@
  *  @details    提供HMC5883初始化，校准，数据获取等功能
  *  @author     Harry-Qu
  *  @date       2022/11/23
- *  @version    1.0
+ *  @version    1.0.1
  *  @par        日志
  *              1.0     |       完成HMC5883驱动基本功能
+ *              1.0.1   |       修复磁力计状态结构体命名命名错误
+ *                              修改磁场数据为广州数据，并新增查询链接注释
 */
 #ifndef HMC5883_H
 #define HMC5883_H
@@ -18,9 +20,13 @@
 
 #define HMC5883_I2C hi2c1
 
-#define STANDAR_GAUSS 0.511116f //当地标准磁场
-#define STANDAR_VERTICAL_GAUSS  0.381951f   //当地标准磁场水平强度
-#define STANDAR_HORIZONTAL_GAUSS  0.339637f //当地标准磁场垂直强度
+
+//坐标查询链接:https://lbs.amap.com/tools/picker
+//当地磁场强度查询链接:https://ngdc.noaa.gov/geomag/calculators/magcalc.shtml#igrfwmm
+
+#define STANDAR_GAUSS 0.407899f //当地标准磁场
+#define STANDAR_VERTICAL_GAUSS  0.306911f   //当地标准磁场水平强度
+#define STANDAR_HORIZONTAL_GAUSS  0.268678f //当地标准磁场垂直强度
 
 /** =========配置========= **/
 
@@ -30,14 +36,17 @@
 
 typedef vector3f_t mag_t;   //地磁处理后数据
 
-enum MSG_STATUS_CODE{
-    MSG_OK = 0,
-    MSG_INIT_ERROR,
-    MSG_REFRESH_ERROR,
+enum MAG_STATUS_CODE{
+    MAG_OK = 0,
+    MAG_INIT_ERROR,
+    MAG_REFRESH_ERROR,
 };
 
-extern enum MSG_STATUS_CODE magStatus;
+extern enum MAG_STATUS_CODE magStatus;
+extern mag_t mag_raw_data;
 extern mag_t mag_calibrated_data;
+extern vector3f_t mag_offset_error;
+extern vector3f_t mag_scale_error;
 
 /**
  * @brief 初始化磁力计
