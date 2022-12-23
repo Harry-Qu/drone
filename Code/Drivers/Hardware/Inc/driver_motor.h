@@ -20,8 +20,8 @@
 
 #define MOTOR_TIMER htim3
 
-#define MIN_DUTY 1000
-#define MAX_DUTY 2000
+#define MIN_DUTY 2000
+#define MAX_DUTY 4000
 #define MAX_MOTOR_SPEED 10000
 
 /**
