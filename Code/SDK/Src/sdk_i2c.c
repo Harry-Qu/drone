@@ -3,16 +3,18 @@
  *  @details    普通,DMA方式发送,接收数据
  *  @author     Harry-Qu
  *  @date       2022/5/18
- *  @version    1.2.1
+ *  @version    1.3
  *  @par        日志
  *              1.0     |       实现普通和DMA方式发送接收数据功能。
  *              1.1     |       新增从指定内存地址读取数据功能。
  *              1.2     |       降低与ucos-II的耦合，可在非操作系统环境下使用
  *              1.2.1   |       新增向I2C设备指定内存地址写入数据功能
  *                              新增接口为sdk_i2c_memory_write, sdk_i2c_memory_write_dma
+ *              1.3     |       新增I2C总线恢复功能
 */
 
 #include "sdk_i2c.h"
+#include "sdk_time.h"
 
 #ifdef OS_uCOS_II_H
 
@@ -433,4 +435,75 @@ sdk_i2c_memory_write_dma(I2C_HandleTypeDef *hi2c, uint16_t DevAddress, uint16_t 
 }
 
 
+void sdk_i2c_recovery(I2C_HandleTypeDef *hi2c) {
+    HAL_I2C_DeInit(hi2c);
 
+    GPIO_TypeDef *sda_GPIO = NULL, *scl_GPIO = NULL;
+    uint32_t sda_Pin, scl_Pin;
+
+#ifdef I2C1_SCL_GPIO_Port
+    if (hi2c->Instance == I2C1) {
+        sda_GPIO = I2C1_SDA_GPIO_Port;
+        sda_Pin = I2C1_SDA_Pin;
+        scl_GPIO = I2C1_SCL_GPIO_Port;
+        scl_Pin = I2C1_SCL_Pin;
+    }
+#endif
+
+#ifdef I2C2_SCL_GPIO_Port
+    if (hi2c->Instance == I2C2) {
+        sda_GPIO = I2C2_SDA_GPIO_Port;
+        sda_Pin = I2C2_SDA_Pin;
+        scl_GPIO = I2C2_SCL_GPIO_Port;
+        scl_Pin = I2C2_SCL_Pin;
+    }
+#endif
+
+#ifdef I2C3_SCL_GPIO_Port
+    if (hi2c->Instance == I2C3) {
+        sda_GPIO = I2C3_SDA_GPIO_Port;
+        sda_Pin = I2C3_SDA_Pin;
+        scl_GPIO = I2C3_SCL_GPIO_Port;
+        scl_Pin = I2C3_SCL_Pin;
+    }
+#endif
+
+    if (sda_GPIO == NULL) {
+        HAL_I2C_Init(hi2c);
+        return;
+    }
+
+    GPIO_InitTypeDef GPIO_InitStruct = {0};
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+
+    GPIO_InitStruct.Pin = sda_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+    HAL_GPIO_Init(sda_GPIO, &GPIO_InitStruct);
+    if (HAL_GPIO_ReadPin(sda_GPIO, sda_Pin) == GPIO_PIN_RESET) {
+        printf("[warning] i2C bus is busy!!!\n");
+        GPIO_InitStruct.Pin = scl_Pin;
+        GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+        HAL_GPIO_Init(scl_GPIO, &GPIO_InitStruct);
+
+        uint8_t i = 0;
+        for (; i < 9; ++i) {
+            HAL_GPIO_WritePin(scl_GPIO, scl_Pin, GPIO_PIN_RESET);
+            delay_us(4);
+            if (HAL_GPIO_ReadPin(sda_GPIO, sda_Pin) == GPIO_PIN_SET) {
+                break;
+            }
+            HAL_GPIO_WritePin(scl_GPIO, scl_Pin, GPIO_PIN_SET);
+            delay_us(4);
+        }
+        if (i < 9 || HAL_GPIO_ReadPin(sda_GPIO, sda_Pin) == GPIO_PIN_SET) {
+            GPIO_InitStruct.Pin = sda_Pin;
+            GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+            HAL_GPIO_Init(sda_GPIO, &GPIO_InitStruct);
+            HAL_GPIO_WritePin(sda_GPIO, sda_Pin, GPIO_PIN_RESET);
+            delay_us(4);
+            HAL_GPIO_WritePin(scl_GPIO, scl_Pin, GPIO_PIN_SET);
+            HAL_GPIO_WritePin(sda_GPIO, sda_Pin, GPIO_PIN_SET);
+        }
+    }
+    HAL_I2C_Init(hi2c);
+}

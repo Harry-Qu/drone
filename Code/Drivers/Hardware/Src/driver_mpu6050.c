@@ -174,6 +174,7 @@ driver_MPU6050_transmitData_memory(uint16_t MemAddress, uint8_t *pData, uint16_t
 
 uint8_t driver_MPU6050_Init(int accelRange, int gyroRange) {
     uint8_t status;
+    sdk_i2c_recovery(&MPU6050_I2C);
 
     status = driver_MPU6050_IsOnline();
     if (status != 0) {

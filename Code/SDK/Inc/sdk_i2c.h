@@ -3,13 +3,14 @@
  *  @details    普通,DMA方式发送,接收数据
  *  @author     Harry-Qu
  *  @date       2022/5/18
- *  @version    1.2.1
+ *  @version    1.3
  *  @par        日志
  *              1.0     |       实现普通和DMA方式发送接收数据功能。
  *              1.1     |       新增从指定内存地址读取数据功能。
  *              1.2     |       降低与ucos-II的耦合，可在非操作系统环境下使用
  *              1.2.1   |       新增向I2C设备指定内存地址写入数据功能
  *                              新增接口为sdk_i2c_memory_write, sdk_i2c_memory_write_dma
+ *              1.3     |       新增I2C总线恢复功能
 */
 
 #ifndef SDK_I2C_H
@@ -151,5 +152,13 @@ sdk_i2c_memory_write(I2C_HandleTypeDef *hi2c, uint16_t DevAddress, uint16_t MemA
 HAL_StatusTypeDef
 sdk_i2c_memory_write_dma(I2C_HandleTypeDef *hi2c, uint16_t DevAddress, uint16_t MemAddress, uint16_t MemAddSize,
                          uint8_t *pData, uint16_t Size, uint32_t Timeout, uint8_t *perr);
+
+/**
+ * 恢复I2C总线
+ * @note 检测I2C总线是否挂死，若挂死将尝试进行恢复
+ *       需要为I2C相关GPIO口进行宏定义操作，CUBEMX中GPIO口的用户标签定义为I2Cx_SDA或I2Cx_SCL
+ * @param hi2c i2c handle
+ */
+void sdk_i2c_recovery(I2C_HandleTypeDef *hi2c);
 
 #endif //SDK_I2C_H
