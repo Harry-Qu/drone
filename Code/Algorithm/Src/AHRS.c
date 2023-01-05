@@ -5,8 +5,10 @@
  *              提供了四元数转换角度的方法
  *  @author     Harry-Qu
  *  @date       2022/10/26
- *  @version    1.0
+ *  @version    1.1
  *  @par        日志
+ *              1.0     |       实现姿态解算基本功能
+ *              1.1     |       新增四元数初始化功能
 */
 
 #include "AHRS.h"
@@ -422,4 +424,42 @@ void AHRS_ConvertQuatToDegree(quat_t *q, vector3f_t *angle) {
             -atan2f(2.0f * q->a * q->b + 2.0f * q->c * q->d, 2.0f * SQR(q->a) - 1 + 2.0f * SQR(q->d)) * RAD_TO_DEGREE;
     angle->z =
             -atan2f(2.0f * q->a * q->d + 2.0f * q->b * q->c, 2.0f * SQR(q->a) - 1 + 2.0f * SQR(q->b)) * RAD_TO_DEGREE;
+}
+
+void AHRS_InitQuat_MAG(quat_t *q, vector3f_t m) {
+    float roll = 0, pitch = 0, yaw = 0;
+
+    yaw = atan2f(m.y, m.x);
+
+    yaw = -yaw;
+
+    q->a = cosf(yaw / 2);
+    q->b = 0;
+    q->c = 0;
+    q->d = sinf(yaw / 2);
+}
+
+void AHRS_InitQuat_IMUAndAXIS(quat_t *q, vector3f_t a, vector3f_t m) {
+
+    float cosRoll, cosPitch, cosYaw;
+    float sinRoll, sinPitch, sinYaw;
+
+    float roll = 0, pitch = 0, yaw = 0;
+
+    roll = atanf(a.y / sqrtf(SQR(a.x) + SQR(a.z)));
+    pitch = atanf(a.x / sqrtf(SQR(a.y) + SQR(a.z)));
+    yaw = -atan2f(m.y, m.x);
+
+    cosRoll = cosf(roll / 2);
+    cosPitch = cosf(pitch / 2);
+    cosYaw = cosf(yaw / 2);
+    sinRoll = sinf(roll / 2);
+    sinPitch = sinf(pitch / 2);
+    sinYaw = sinf(yaw / 2);
+
+
+    q->a = cosRoll * cosPitch * cosYaw - sinRoll * sinPitch * sinYaw;
+    q->b = sinRoll * cosPitch * cosYaw - cosRoll * sinPitch * sinYaw;
+    q->c = cosRoll * sinPitch * cosYaw - sinRoll * cosPitch * sinYaw;
+    q->d = cosRoll * cosPitch * sinYaw - sinRoll * sinPitch * cosYaw;
 }

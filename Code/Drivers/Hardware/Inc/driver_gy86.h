@@ -3,22 +3,26 @@
  *  @details    提供GY86初始化、数据接收、数据解析操作
  *  @author     Harry-Qu
  *  @date       2021.10
- *  @version    1.3
+ *  @version    1.3.1
  *  @par        Copyright (c):  四轴小组
- *  @par    版本变更:
-				1.0		|		实现初始化、数据接收、数据解析等函数
-				1.1     |       修改部分IMU数据结构体
-				                修改磁力计处理数据的相关bug
-				                新增四元数结构体
-				                新增均值法计算IMU零偏误差功能
-				                新增高斯牛顿迭代法计算零偏误差与刻度误差功能（没啥用）
-				                新增8字校准法测量磁力计误差功能
-				                新增计算加速度计校准后数据功能
-				                新增向匿名上位机发送数据功能
-				                新增梯度下降法计算姿态（四元数）功能
-				                新增madgwick计算姿态（四元数）功能
-                1.2     |       降低与sdk_i2c, sdk_ano的耦合，注释该头文件后仍可正常运行此代码，但无法提供DMA，数据发送功能
-                1.3     |       拆分各芯片驱动代码
+ *  @par        版本变更:
+ *  			1.0		|		实现初始化、数据接收、数据解析等函数
+ *  			1.1     |       修改部分IMU数据结构体
+ *  			                修改磁力计处理数据的相关bug
+ *  			                新增四元数结构体
+ *  			                新增均值法计算IMU零偏误差功能
+ *  			                新增高斯牛顿迭代法计算零偏误差与刻度误差功能（没啥用）
+ *  			                新增8字校准法测量磁力计误差功能
+ *  			                新增计算加速度计校准后数据功能
+ *  			                新增向匿名上位机发送数据功能
+ *  			                新增梯度下降法计算姿态（四元数）功能
+ *  			                新增madgwick计算姿态（四元数）功能
+ *              1.2     |       降低与sdk_i2c, sdk_ano的耦合，注释该头文件后仍可正常运行此代码，但无法提供DMA，数据发送功能
+ *              1.3     |       拆分各芯片驱动代码
+ *                              修改部分函数体状态返回类型为uint8_t
+ *                              去除姿态测试代码
+ *                              修改纯梯度下降法算法
+ *              1.3.1   |       去除四元数初始化功能
 
 */
 
@@ -43,10 +47,6 @@
 #define GY86_APG 0x02
 #define GY86_MAG 0x04
 
-
-
-extern quat_t attitude;
-extern vector3f_t attitudeAngle;
 
 
 
@@ -86,28 +86,6 @@ uint8_t driver_gy86_Init(uint8_t init_device_id);
  * @retval None
  */
 uint8_t driver_gy86_Refresh_Data(uint8_t refresh_device_id);
-
-
-/**
- * 根据磁力计数据初始化四元数
- */
-void driver_gy86_Attitude_InitQuat_MAG(void);
-
-/**
- * 在静态环境下使用梯度下降法计算姿态
- * @details 利用加速度计与磁力计数据，在静态环境下使用梯度下降法计算四轴飞行器姿态。
- */
-void driver_gy86_Attitude_Update_Grad(void);
-
-/**
- * madgwick
- */
-void driver_gy86_Attitude_Update_Madgwick(void);
-
-/**
- *
- */
-void driver_gy86_Attitude_Update_Mahony(void);
 
 /**
  * 发送姿态数据（四元数）给匿名上位机

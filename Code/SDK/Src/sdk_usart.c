@@ -48,12 +48,12 @@ void sdk_usartdma_init() {
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
 #ifdef OS_uCOS_II_H
-    OS_EVENT *husartCompleteSem = Get_USART_Sem(usartCompletedSem, huart);
+    OS_EVENT *huartCompleteSem = Get_USART_Sem(usartCompletedSem, huart);
 
     OS_SEM_DATA semData;
-    if (OSSemQuery(husartCompleteSem, &semData) == OS_ERR_NONE && semData.OSCnt == 0) {
+    if (OSSemQuery(huartCompleteSem, &semData) == OS_ERR_NONE && semData.OSCnt == 0) {
         //信号量为0
-        OSSemPost(husartCompleteSem);
+        OSSemPost(huartCompleteSem);
     }
 #endif
 }

@@ -3,8 +3,11 @@
  *  @details    提供PID相关操作
  *  @author     Harry-Qu
  *  @date       2022/10/27
- *  @version    1.0
+ *  @version    1.1
  *  @par        日志
+ *              1.0     |       实现PID基础功能
+ *              1.1     |       新增PID积分限幅参数（调试）修改功能
+ *
 */
 
 #ifndef GY86_PID_H
@@ -22,6 +25,8 @@ typedef struct {
     float lastError;    //上次的误差值
     float integral; //积分值
     float out;  //输出值
+
+    float pOut,iOut, dOut;
 } pid_type;
 
 #define pid_setTarget(pid, value) pid.target = (value)

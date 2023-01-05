@@ -3,9 +3,11 @@
  *  @details    提供MPU6050初始化，数据获取，数据校准等基本操作。
  *  @author     Harry-Qu
  *  @date       2022/11/23
- *  @version    1.0
+ *  @version    1.1
  *  @par        日志
  *              1.0     |       完成MPU6050驱动基本功能
+ *              1.1     |       修改部分全局变量为静态变量
+ *                              新增固定误差功能
  *              
  *              
  *  @code       示例代码
@@ -32,13 +34,13 @@
 
 enum IMU_STATUS_CODE imuStatus = IMU_OK;
 
-imu_config_factor_t imu_config_factor = {16384, 131}; //IMU量程参数数据
+static imu_config_factor_t imu_config_factor = {16384, 131}; //IMU量程参数数据
 imu_t imu_raw_data; //原始IMU加速度与陀螺仪数据
 
 imu_t imu_calibrated_data; //校准后的IMU加速度与陀螺仪数据
-imu_error_t imu_offset_error = {{0, 0, 0},
+static imu_error_t imu_offset_error = {{0, 0, 0},
                                 {0, 0, 0}}; //IMU零偏误差值
-imu_error_t imu_scale_error = {{1, 1, 1},
+static imu_error_t imu_scale_error = {{1, 1, 1},
                                {1, 1, 1}}; //IMU刻度误差值
 
 #ifdef MPU6050_FILTER
@@ -399,6 +401,16 @@ uint8_t driver_MPU6050_RefreshData(void) {
 }
 
 void driver_MPU6050_MeasureOffsetError_Avg(int sampleSize) {
+#ifdef FIXED_ERROR
+    imu_offset_error.acc.x = ACC_OFFSET_ERROR_X;
+    imu_offset_error.acc.y = ACC_OFFSET_ERROR_Y;
+    imu_offset_error.acc.z = ACC_OFFSET_ERROR_Z;
+
+    imu_offset_error.gyro.x = GYRO_OFFSET_ERROR_X;
+    imu_offset_error.gyro.y = GYRO_OFFSET_ERROR_Y;
+    imu_offset_error.gyro.z = GYRO_OFFSET_ERROR_Z;
+    printf("fixed error.\n");
+#else
     vector3f_t acc_sum = {0, 0, 0}; //对多次采样加速度数值求和
     vector3f_t gyro_sum = {0, 0, 0}; //对多次采样角速度数值求和
     for (int i = 0; i < sampleSize; ++i) {
@@ -422,6 +434,7 @@ void driver_MPU6050_MeasureOffsetError_Avg(int sampleSize) {
     imu_offset_error.gyro.x = gyro_sum.x / sampleSize;
     imu_offset_error.gyro.y = gyro_sum.y / sampleSize;
     imu_offset_error.gyro.z = gyro_sum.z / sampleSize;
+#endif
 
     printf("acc offset error:%.2f %.2f %.2f\n", imu_offset_error.acc.x, imu_offset_error.acc.y,
            imu_offset_error.acc.z);
@@ -529,4 +542,8 @@ void driver_MPU6050_TransmitAttitude(void) {
 
     sdk_ano_transmit_flight_control_attitude_euler_angle(&data);
 #endif
+}
+
+enum IMU_STATUS_CODE driver_MPU6050_GetState(void) {
+    return imuStatus;
 }

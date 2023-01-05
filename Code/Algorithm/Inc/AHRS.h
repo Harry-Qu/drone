@@ -5,8 +5,10 @@
  *              提供了四元数转换角度的方法
  *  @author     Harry-Qu
  *  @date       2022/10/26
- *  @version    1.0
+ *  @version    1.1
  *  @par        日志
+ *              1.0     |       实现姿态解算基本功能
+ *              1.1     |       新增四元数初始化功能
 */
 
 #ifndef GY86_AHRS_H
@@ -57,5 +59,20 @@ void AHRS_Mahony(quat_t *q, vector3f_t a, vector3f_t g, vector3f_t m);
  * @param angle 角度（结果）
  */
 void AHRS_ConvertQuatToDegree(quat_t *q, vector3f_t *angle);
+
+/**
+ * 初始化四元数
+ * @param q 四元数
+ * @param m 磁力计数据
+ */
+void AHRS_InitQuat_MAG(quat_t *q, vector3f_t m);
+
+/**
+ * 初始化四元数
+ * @param q 四元数
+ * @param a 线性加速度
+ * @param m 磁力计数据
+ */
+void AHRS_InitQuat_IMUAndAXIS(quat_t *q, vector3f_t a, vector3f_t m);
 
 #endif //GY86_AHRS_H

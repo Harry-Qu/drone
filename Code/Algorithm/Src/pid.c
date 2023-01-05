@@ -3,11 +3,13 @@
  *  @details    提供PID相关操作
  *  @author     Harry-Qu
  *  @date       2022/10/27
- *  @version    1.0
+ *  @version    1.1
  *  @par        日志
+ *              1.0     |       实现PID基础功能
+ *              1.1     |       新增PID积分限幅参数（调试）修改功能
 */
 
-//TODO 还未对PID进行测试
+
 
 #include "pid.h"
 #include "sdk_math.h"
@@ -29,8 +31,10 @@ float PID_calculate(pid_type *pid) {
     if (pid->integralLimit > 0) {
         LIMIT(pid->integral, -pid->integralLimit, pid->integralLimit);
     }
-
-    pid->out = pid->kp * pid->error + pid->ki * pid->integral + pid->kd * (pid->error - pid->lastError);
+    pid->pOut = pid->kp * pid->error;
+    pid->iOut = pid->ki * pid->integral;
+    pid->dOut = pid->kd * (pid->error - pid->lastError);
+    pid->out = pid->pOut + pid->iOut + pid->dOut;
     pid->lastError = pid->error;
 
     return pid->out;
@@ -55,6 +59,9 @@ void PID_setArg(pid_type *pid, int8_t argId, float value) {
         case 2:
             pid->kd = value;
             break;
+        case 3:
+            pid->integralLimit = value;
+            break;
         default:
             break;
     }
@@ -66,6 +73,6 @@ void PID_getArgString(pid_type *pid, char *strs) {
     if (pid == NULL){
         return;
     }
-    sprintf(strs, "Kp=%.2f Ki=%.2f Kd=%.2f\n", pid->kp, pid->ki, pid->kd);
+    sprintf(strs, "p=%.2f i=%.2f d=%.2f iL=%.2f\n", pid->kp, pid->ki, pid->kd, pid->integralLimit);
 }
 

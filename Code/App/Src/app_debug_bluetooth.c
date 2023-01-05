@@ -3,8 +3,10 @@
  *  @details    实现接收上位机调参指令功能，需使用DMA
  *  @author     Harry-Qu
  *  @date       2022/10/16
- *  @version    1.0
+ *  @version    1.1
  *  @par        日志
+ *              1.0     |       实现蓝牙调试基础功能
+ *              1.1     |       新增存储PID参数，读取PID参数功能
 */
 
 /**
@@ -19,6 +21,11 @@
  *      y,p=1.00        ;yaw, kp=1.00
  *      h,p=-0.50       ;height, kp=-0.50
  *
+ * 蓝牙读取PID历史参数功能
+ * 样例:
+ *      pi=?
+ *      y=?
+ *
  */
 
 #include "app_debug_bluetooth.h"
@@ -29,6 +36,7 @@
 #include "pid.h"
 #include "AHRS.h"
 #include <stdlib.h>
+#include "app_debug_pid_storage.h"
 
 
 uint8_t bluetooth_dataBuffer[100];
@@ -40,9 +48,7 @@ uint8_t bluetooth_dataBuffer[100];
  * @param length 数据长度
  */
 static void app_bluetooth_solvePid(char *dataBuffer, uint16_t length) {
-    if (length < 8 || length > 12) {
-        return;
-    }
+
 
     pid_type *pid = NULL;  //调的是哪个pid
     int pos;                //参数位置
@@ -98,27 +104,40 @@ static void app_bluetooth_solvePid(char *dataBuffer, uint16_t length) {
         return;
     }
 
-    switch (dataBuffer[pos]) {
-        case 'p':
-            argId = 0;
-            break;
-        case 'i':
-            argId = 1;
-            break;
-        case 'd':
-            argId = 2;
-            break;
-    }
-    if (argId == -1 || dataBuffer[pos + 1] != '=') {
-        return;
-    }
-    float value = convertString2Float((char *) dataBuffer + (pos + 2));
+    if (dataBuffer[pos - 1] == '=' && dataBuffer[pos] == '?') {
+#if DEBUG_PID_STORAGE_EN > 0
+        app_debug_read_pid_data(pid);
+#endif
+    } else {
+        switch (dataBuffer[pos]) {
+            case 'p':
+                argId = 0;
+                break;
+            case 'i':
+                argId = 1;
+                break;
+            case 'd':
+                argId = 2;
+                break;
+            case 'l':
+                argId = 3;
+                break;
+        }
+        if (argId == -1 || dataBuffer[pos + 1] != '=') {
+            return;
+        }
+        float value = convertString2Float((char *) dataBuffer + (pos + 2));
 
-    PID_setArg(pid, argId, value);
+        PID_setArg(pid, argId, value);
+#if DEBUG_PID_STORAGE_EN > 0
+        app_debug_save_pid_data(pid, argId, value);
+#endif
+        char replyString[80];
+        PID_getArgString(pid, replyString);
+        app_debug_ano_log(replyString);
+    }
 
-    char replyString[25];
-    PID_getArgString(pid, replyString);
-    app_debug_ano_log(replyString);
+
 }
 
 /**

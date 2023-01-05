@@ -3,13 +3,14 @@
  *  @details    负责GY86数据采集，姿态解算任务
  *  @author     Harry-Qu
  *  @date       2022.04
- *  @version    1.2.0
+ *  @version    1.3.0
  *  @par        Copyright (c):  四轴小组
  *  @par    版本变更:
  *  			1.0.0   |		实现基本功能
  *  			1.1.0   |       支持OSTimeDly延时方式，修复初始化时延时的bug
  *  			1.1.1   |       将任务修改为定时器调用方式，周期控制更加精准
  *  			1.2.0   |       新增8字校准法，使用EEPROM保存校准数据
+ *  			1.3.0   |       新增数据互斥访问功能
  *
  *
  *  @note
@@ -35,6 +36,15 @@
 
 static OS_EVENT *sem_attitude_task;
 float debugMagExpectLength, debugMagFactLength;
+OS_EVENT *sem_attitude_data;
+
+quat_t attitude;
+vector3f_t attitudeAngle;
+
+#define IMU_GYRO_AVG_SAMPLE_SIZE 5
+vector3f_t imu_gyro_avg_data = {0};
+vector3f_t imu_gyro_calibrated_history_data[IMU_GYRO_AVG_SAMPLE_SIZE] = {0};
+uint8_t imu_gyro_avg_index = 0;
 
 /**
  * 计算校准数据校验和
@@ -78,13 +88,13 @@ uint8_t app_attitude_calibrate_mag_getErrorDataByRom(void) {
     status = driver_at24c0x_readData_page(MAG_CALIBRATION_ROM_PAGE, 0x10, mag_calibration_data,
                                           sizeof(mag_calibration_data_t) * sizeData.dataSize);
     if (status > 0) {
-        printf("[fail] read Detail Error Data.\n");
+        printf("[warning] read Detail Error Data.\n");
         return 1;
     }
 
     status = driver_HMC5883_GetRawData();
     if (status > 0) {
-        printf("[fail] read MAG Data.\n");
+        printf("[warning] read MAG Data.\n");
         return 1;
     }
 
@@ -94,7 +104,7 @@ uint8_t app_attitude_calibrate_mag_getErrorDataByRom(void) {
 //        printf("%02X %02X.\n", check[0], check[1]);
 //        printf("%02X %02X.\n", pmag_calibration_data->sumCheck, pmag_calibration_data->addCheck);
         if (check[0] != pmag_calibration_data->sumCheck || check[1] != pmag_calibration_data->addCheck) {
-            printf("[fail] validate Data.\n");
+            printf("[warning] validate Data.\n");
             continue;
         }
 
@@ -110,7 +120,7 @@ uint8_t app_attitude_calibrate_mag_getErrorDataByRom(void) {
             mag_scale_error = pmag_calibration_data->scale_error;
             return 0;
         }
-        printf("[fail] check.\tfactLength:%.2f,expectLength:%.2f.\n", length, pmag_calibration_data->magLength);
+        printf("[warning] check.\tfactLength:%.2f,expectLength:%.2f.\n", length, pmag_calibration_data->magLength);
     }
     return 1;
 }
@@ -129,7 +139,7 @@ void app_attitude_MeasureError_8shape(void) {
     uint8_t finishAxis = 0; // 已校准的轴,按位表示,bit0=x,bit1=y,bit2=z
     uint8_t nowAxis = 0;    //正在校准的轴,按位表示
 
-    driver_rgb_setColor(YELLOW, 2);
+    driver_rgb_setColor(YELLOW, 1);
 
     while (finishAxisNum < 1) {
         driver_MPU6050_RefreshData();
@@ -294,9 +304,12 @@ void app_attitude_calibrate_mag(void) {
 void app_attitude_init(void) {
     driver_gy86_Init(GY86_IMU | GY86_MAG | GY86_APG);  //初始化GY86各芯片
 
-    app_attitude_calibrate_mag();
+//    app_attitude_calibrate_mag();
 
-    driver_gy86_Attitude_InitQuat_MAG();    //计算一个初始的四元数
+    driver_HMC5883_RefreshData();
+    AHRS_InitQuat_MAG(&attitude, mag_calibrated_data);    //计算一个初始的四元数
+
+    sem_attitude_data = OSSemCreate(1);
 }
 
 void app_attitude_tmr_callback(void *ptmr, void *parg) {
@@ -314,15 +327,40 @@ void app_attitude_task(void *args) {
                                     (INT8U *) "attitude_TASK_Tmr", &err);//75Hz
     OSTmrStart(tmr_attitude_task, &err);
 
+    uint8_t status;
+
     while (1) {
         OSSemPend(sem_attitude_task, 0, &err);
         OS_TRACE_MARKER_START(2);
-        driver_MPU6050_RefreshData();
-        driver_HMC5883_RefreshData();
+
+        status = driver_MPU6050_GetRawData();
+        if (status == 0) {
+            driver_MPU6050_CalibrateData();
+            OSSemPend(sem_attitude_data, OS_TICKS(2), &err);
+            imu_gyro_avg_data.x -= imu_gyro_calibrated_history_data[imu_gyro_avg_index].x / IMU_GYRO_AVG_SAMPLE_SIZE;
+            imu_gyro_avg_data.x += imu_calibrated_data.gyro.x / IMU_GYRO_AVG_SAMPLE_SIZE;
+            imu_gyro_avg_data.y -= imu_gyro_calibrated_history_data[imu_gyro_avg_index].y / IMU_GYRO_AVG_SAMPLE_SIZE;
+            imu_gyro_avg_data.y += imu_calibrated_data.gyro.y / IMU_GYRO_AVG_SAMPLE_SIZE;
+            imu_gyro_avg_data.z -= imu_gyro_calibrated_history_data[imu_gyro_avg_index].z / IMU_GYRO_AVG_SAMPLE_SIZE;
+            imu_gyro_avg_data.z += imu_calibrated_data.gyro.z / IMU_GYRO_AVG_SAMPLE_SIZE;
+            OSSemPost(sem_attitude_data);
+            imu_gyro_calibrated_history_data[imu_gyro_avg_index] = imu_calibrated_data.gyro;
+            imu_gyro_avg_index = (imu_gyro_avg_index + 1) % IMU_GYRO_AVG_SAMPLE_SIZE;
+        }
+
+        status = driver_HMC5883_GetRawData();
+        if (status == 0) {
+            OSSemPend(sem_attitude_data, OS_TICKS(2), &err);
+            driver_HMC5883_CalibrateData();
+            OSSemPost(sem_attitude_data);
+        }
         debugMagFactLength = sqrtf(SQ(mag_calibrated_data.x) + SQ(mag_calibrated_data.y) + SQ(mag_calibrated_data.z));
+
+        OSSemPend(sem_attitude_data, OS_TICKS(2), &err);
 //        driver_gy86_Attitude_Update_Madgwick();
         AHRS_MadgWickTest(&attitude, imu_calibrated_data.acc, imu_calibrated_data.gyro, mag_calibrated_data);
 //        driver_gy86_Attitude_Update_Mahony();
+        OSSemPost(sem_attitude_data);
         OS_TRACE_MARKER_STOP(2);
     }
 

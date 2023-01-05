@@ -3,7 +3,7 @@
  *  @details    提供GY86初始化、数据接收、数据解析操作
  *  @author     Harry-Qu
  *  @date       2021.10
- *  @version    1.3
+ *  @version    1.3.1
  *  @par        Copyright (c):  四轴小组
  *  @par        版本变更:
  *  			1.0		|		实现初始化、数据接收、数据解析等函数
@@ -22,6 +22,7 @@
  *                              修改部分函数体状态返回类型为uint8_t
  *                              去除姿态测试代码
  *                              修改纯梯度下降法算法
+ *              1.3.1   |       去除四元数初始化功能
  *
 */
 
@@ -38,8 +39,6 @@
 
 enum GY86_STATUS_CODE gy86_status = 0;  //GY86状态
 
-quat_t attitude;
-vector3f_t attitudeAngle;
 
 static void driver_gy86_init_args(void) {
 
@@ -150,58 +149,6 @@ uint8_t driver_gy86_Refresh_Data(uint8_t refresh_device_id) {
     return status;
 }
 
-void driver_gy86_Attitude_InitQuat_MAG(void) {
-    driver_HMC5883_RefreshData();
-
-    float roll = 0, pitch = 0, yaw = 0;
-
-    yaw = atan2f(mag_calibrated_data.y, mag_calibrated_data.x);
-
-    yaw = -yaw;
-
-    attitude.a = cosf(yaw / 2);
-    attitude.b = 0;
-    attitude.c = 0;
-    attitude.d = sinf(yaw / 2);
-}
-
-void driver_gy86_Attitude_InitQuat_IMUAndAXIS(void) {
-
-    float cosRoll, cosPitch, cosYaw;
-    float sinRoll, sinPitch, sinYaw;
-
-    float roll = 0, pitch = 0, yaw = 0;
-
-    driver_MPU6050_RefreshData();
-    driver_HMC5883_RefreshData();
-
-    roll = atanf(imu_calibrated_data.acc.y /
-                 sqrtf(SQR(imu_calibrated_data.acc.x) + SQR(imu_calibrated_data.acc.z)));
-    pitch = atanf(imu_calibrated_data.acc.x /
-                  sqrtf(SQR(imu_calibrated_data.acc.y) + SQR(imu_calibrated_data.acc.z)));
-    yaw = -atan2f(mag_calibrated_data.y, mag_calibrated_data.x);
-
-    cosRoll = cosf(roll / 2);
-    cosPitch = cosf(pitch / 2);
-    cosYaw = cosf(yaw / 2);
-    sinRoll = sinf(roll / 2);
-    sinPitch = sinf(pitch / 2);
-    sinYaw = sinf(yaw / 2);
-
-
-    attitude.a = cosRoll * cosPitch * cosYaw - sinRoll * sinPitch * sinYaw;
-    attitude.b = sinRoll * cosPitch * cosYaw - cosRoll * sinPitch * sinYaw;
-    attitude.c = cosRoll * sinPitch * cosYaw - sinRoll * cosPitch * sinYaw;
-    attitude.d = cosRoll * cosPitch * sinYaw - sinRoll * sinPitch * cosYaw;
-}
-
-void driver_gy86_Attitude_Update_Madgwick(void) {
-    AHRS_MadgWick(&attitude, imu_calibrated_data.acc, imu_calibrated_data.gyro, mag_calibrated_data);
-}
-
-void driver_gy86_Attitude_Update_Mahony(void) {
-    AHRS_Mahony(&attitude, imu_calibrated_data.acc, imu_calibrated_data.gyro, mag_calibrated_data);
-}
 
 //void driver_gy86_Attitude_Update_Grad(void) {
 //    //TODO 修改纯梯度下降法

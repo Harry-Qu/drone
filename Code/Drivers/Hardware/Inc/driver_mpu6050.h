@@ -3,9 +3,11 @@
  *  @details    提供MPU6050初始化，数据获取，数据校准等基本操作。
  *  @author     Harry-Qu
  *  @date       2022/11/23
- *  @version    1.0
+ *  @version    1.1
  *  @par        日志
  *              1.0     |       完成MPU6050驱动基本功能
+ *              1.1     |       修改部分全局变量为静态变量
+ *                              新增固定误差功能
 */
 
 #ifndef MPU6050_H
@@ -20,6 +22,16 @@
 #define MPU6050_I2C hi2c1
 
 #define MPU6050_FILTER  //是否对数据滤波
+
+//#define FIXED_ERROR //是否采用固定误差
+
+#define ACC_OFFSET_ERROR_X 0.04f
+#define ACC_OFFSET_ERROR_Y 0.02f
+#define ACC_OFFSET_ERROR_Z -0.12f
+
+#define GYRO_OFFSET_ERROR_X -0.02f
+#define GYRO_OFFSET_ERROR_Y -0.03f
+#define GYRO_OFFSET_ERROR_Z 0.02f
 
 /** =========配置========= **/
 

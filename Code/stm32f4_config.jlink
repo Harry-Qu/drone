@@ -1,5 +1,6 @@
 h 
-loadbin build/drone-iii-401.bin 0x8000000 
+LoadFile build/drone-iii-401.bin 0x8000000 
+VerifyBin build/drone-iii-401.bin 0x8000000 
 r 
 g 
 q

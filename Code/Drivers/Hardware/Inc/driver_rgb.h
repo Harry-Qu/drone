@@ -35,11 +35,11 @@ enum RGB_COLOR {
 #include "tim.h"
 
 
-#define R_PIN GPIO_PIN_2
+#define R_PIN GPIO_PIN_0
 #define R_GPIO_Port GPIOC
 #define G_PIN GPIO_PIN_1
 #define G_GPIO_Port GPIOC
-#define B_PIN GPIO_PIN_0
+#define B_PIN GPIO_PIN_2
 #define B_GPIO_Port GPIOC
 
 //yellow=red+green

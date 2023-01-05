@@ -3,10 +3,12 @@
  *  @details    提供控制相关任务，包含对遥控器数据解算，计算期望角度，PID计算，动能分配，输出PWM
  *  @author     Harry-Qu
  *  @date       2022/10/28
- *  @version    1.0.1
+ *  @version    1.1
  *  @par        日志
  *                  1.0.0   |   实现基本控制功能
- *                  1.0.1   |   新增转速限制宏定义LIMIT_MOTOR_SPEED
+ *                  1.0.1   |   新增限制最大转速功能
+ *                  1.0.2   |   修改电机转速测试代码中满油门值为限制最大转速值
+ *                  1.1     |   新增数据互斥访问功能
 */
 
 #include "main.h"
@@ -21,7 +23,7 @@
 #define MOTOR_BR 0
 #define MOTOR_BL 3
 
-#define HOVER_MOTOR_SPEED 4000 //悬停时电机转速，2800/10000
+#define HOVER_MOTOR_SPEED 3400 //悬停时电机转速，3400/10000
 #define IDLE_MOTOR_SPEED 800  //怠速时电机速度
 #define LIMIT_MOTOR_SPEED 6000 //限制最高转速
 

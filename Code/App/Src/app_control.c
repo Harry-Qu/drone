@@ -3,11 +3,12 @@
  *  @details    提供控制相关任务，包含对遥控器数据解算，计算期望角度，PID计算，动能分配，输出PWM
  *  @author     Harry-Qu
  *  @date       2022/10/28
- *  @version    1.0.2
+ *  @version    1.1
  *  @par        日志
  *                  1.0.0   |   实现基本控制功能
  *                  1.0.1   |   新增限制最大转速功能
  *                  1.0.2   |   修改电机转速测试代码中满油门值为限制最大转速值
+ *                  1.1     |   新增数据互斥访问功能
 */
 
 /**
@@ -39,7 +40,6 @@
 #include "driver_rgb.h"
 #include "sdk_math.h"
 
-
 enum FLY_MODE flyMode = STOP;   //飞行模式（锁定or解锁电机）
 enum FLY_STATE flyState = INIT; //飞行状态
 
@@ -48,7 +48,14 @@ float motorSpeed[4];    //电机转速
 pid_type pidRollInner, pidRollOuter, pidPitchInner, pidPitchOuter, pidYaw, pidHeight;
 
 OS_EVENT *sem_control_task;
+OS_EVENT *sem_pid_data;
 
+extern OS_EVENT *sem_attitude_data;
+
+extern quat_t attitude;
+extern vector3f_t attitudeAngle;
+
+extern vector3f_t imu_gyro_avg_data;
 
 static void app_control_cal_motorSpeed_hover(void);
 
@@ -227,6 +234,8 @@ void app_control_cal_motorSpeed_moving(void) {
 
 
 //    绕着坐标轴逆时针旋转为角度的负方向
+    uint8_t err;
+    OSSemPend(sem_attitude_data, OS_TICKS(3), &err);
 
 
 //TODO 待实机测试
@@ -237,18 +246,20 @@ void app_control_cal_motorSpeed_moving(void) {
 
 //    pid_setCurrent(pidRollOuter, attitudeAngle.x);
 //    pid_setTarget(pidRollOuter, targetRoll);
-//    pid_setCurrent(pidRollInner, imu_calibrated_data.gyro.x);
+//    pid_setCurrent(pidRollInner, imu_gyro_avg_data.x);
 //    pid_setTarget(pidRollInner, PID_calculate(&pidRollOuter));
 //    wx = PID_calculate(&pidRollInner);
 
+    OSSemPend(sem_pid_data, 10, &err);
     pid_setCurrent(pidPitchOuter, attitudeAngle.y);
     pid_setTarget(pidPitchOuter, targetPitch);
-    pid_setCurrent(pidPitchInner, imu_calibrated_data.gyro.y);
+    pid_setCurrent(pidPitchInner, imu_gyro_avg_data.y);
     pid_setTarget(pidPitchInner, 0);
     wy = PID_calculate(&pidPitchInner);
+    OSSemPost(sem_pid_data);
 //    printf("%.2f\n", wy);
 
-//    pid_setCurrent(pidYaw, imu_calibrated_data.gyro.z);
+//    pid_setCurrent(pidYaw, imu_gyro_avg_data.z);
 //    pid_setTarget(pidYaw, targetYawSpeed);
 //    wz = PID_calculate(&pidYaw);
 
@@ -258,6 +269,8 @@ void app_control_cal_motorSpeed_moving(void) {
 //    wh = targetVerticalSpeed * 5;
 
 //    motorSpeed[0] = motorSpeed[1] = motorSpeed[2] = motorSpeed[3] = 0;
+
+    OSSemPost(sem_attitude_data);
 
     motorSpeed[MOTOR_FL] = HOVER_MOTOR_SPEED - wx - wy - wz + wh;
     motorSpeed[MOTOR_FR] = HOVER_MOTOR_SPEED + wx - wy + wz + wh;
@@ -330,8 +343,11 @@ void app_control_transmitMotorSpeed(void) {
 
 void app_control(void) {
     driver_dbus_Analysis();
-//    printf("%d %d %d %d\n", rc_data.ch0, rc_data.ch1, rc_data.ch2, rc_data.ch3);
+//    printf("%d %d %d %d %d %d %d\n", rc_data.ch0, rc_data.ch1, rc_data.ch2, rc_data.ch3, rc_data.S1, rc_data.S2, rc_data.Dial);
+    uint8_t err;
+    OSSemPend(sem_attitude_data, 10, &err);
     AHRS_ConvertQuatToDegree(&attitude, &attitudeAngle);
+    OSSemPost(sem_attitude_data);
 
     app_control_modifyFlyMode();
 //    printf("%d %d\n", flyMode, flyState);
@@ -353,7 +369,7 @@ void app_control_task(void *args) {
     uint8_t err;
     OS_TMR *tmr_control_task;
     sem_control_task = OSSemCreate(0);
-    tmr_control_task = OSTmrCreate(0, OS_TICKS(20), OS_TMR_OPT_PERIODIC, app_control_tmr_callback, (void *) 0,
+    tmr_control_task = OSTmrCreate(0, OS_TICKS(5), OS_TMR_OPT_PERIODIC, app_control_tmr_callback, (void *) 0,
                                    (INT8U *) "control_TASK_Tmr", &err);
     OSTmrStart(tmr_control_task, &err);
 
@@ -378,4 +394,6 @@ void app_control_init(void) {
 
     driver_motor_Init();
     driver_dbus_Init();
+
+    sem_pid_data = OSSemCreate(1);
 }
