@@ -3,11 +3,12 @@
  *  @details    该文件内函数会被周期性调用，用于向匿名上位机发送数据
  *  @author     Harry-Qu
  *  @date       2022/11/2
- *  @version    1.1
+ *  @version    1.1.1
  *  @par        日志
  *              1.0     |       实现发送数据帧给匿名上位机的基础功能
  *              1.1     |       新增数据互斥访问功能
  *                              新增发送PID数据功能
+ *              1.1.1   |       新增0xFB刷新帧功能
 */
 
 #include "app_debug_ano.h"
@@ -86,6 +87,9 @@ void app_debug_ano(void) {
     sendData.pidDOut = (int16_t) (pidPitchInner.dOut * 100);
     OSSemPost(sem_pid_data);
     sdk_ano_transmit_custom_data(0xF9, 10, (uint8_t *) &sendData);
+
+
+    sdk_ano_transmit_refresh_frame();
 
 //    struct {
 //        int16_t magFactLength;

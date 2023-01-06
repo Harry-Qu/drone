@@ -4,12 +4,13 @@
  *  @details    匿名上位机数据传输中间件，基于V7.12协议
  *  @author     Harry-Qu
  *  @date       2022/10/4
- *  @version    1.1.0
+ *  @version    1.1.1
  *  @par        日志
  *              1.0.0   |       实现匿名上位机发送数据基本功能
  *                              支持发送传感器基本数据，四轴姿态，用户自定义数据功能。
  *              1.0.1   |       添加高度、PWM、log日志等格式数据帧
  *              1.1.0   |       降低与sdk_usart内函数的耦合
+ *              1.1.1   |       新增0xFB刷新帧功能
 */
 
 #include <memory.h>
@@ -150,6 +151,12 @@ void sdk_ano_transmit_custom_data(uint8_t functionId, uint8_t dataLength, uint8_
         return;
     }
     sdk_ano_combine_data(&anoData, functionId, dataLength, (uint8_t *) data);
+    sdk_ano_transmit_data(&anoData);
+}
+
+void sdk_ano_transmit_refresh_frame() {
+    struct ANO_DATA_T anoData;
+    sdk_ano_combine_data(&anoData, 0xFB, 0, NULL);
     sdk_ano_transmit_data(&anoData);
 }
 
