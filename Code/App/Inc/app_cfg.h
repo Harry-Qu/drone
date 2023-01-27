@@ -16,7 +16,7 @@
 #define DEBUG_OLED_EN 0u    //是否使用OLED显示调试数据
 #define DEBUG_ANO_EN 1u     //是否发送匿名上位机数据
 #define DEBUG_BT_EN 1u      //是否接收上位机调试信息
-#define DEBUG_PID_STORAGE_EN 0u //是否使用ROM记录PID数据
+#define DEBUG_PID_STORAGE_EN 1u //是否使用ROM记录PID数据
 
 #define DEVICE_RGB_EN 1u
 

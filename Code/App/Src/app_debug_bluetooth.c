@@ -190,7 +190,11 @@ void app_bluetooth_callback(UART_HandleTypeDef *huart, uint16_t length) {
 
 }
 
+void callbackTest(UART_HandleTypeDef *huart, uint16_t length){
+//    HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+}
+
 void app_bluetooth_init(void) {
     sdk_uart_register_receive_dma_callback(app_bluetooth_callback, &BTUart, bluetooth_dataBuffer, 100);
-//    sdk_uart_register_receive_dma_callback(app_bluetooth_callback, &huart2, bluetooth_dataBuffer, 100);
+//    sdk_uart_register_receive_dma_callback(callbackTest, &huart2, bluetooth_dataBuffer, 100);
 }

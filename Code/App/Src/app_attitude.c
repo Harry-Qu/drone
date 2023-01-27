@@ -3,7 +3,7 @@
  *  @details    负责GY86数据采集，姿态解算任务
  *  @author     Harry-Qu
  *  @date       2022.04
- *  @version    1.3.0
+ *  @version    1.3.1
  *  @par        Copyright (c):  四轴小组
  *  @par    版本变更:
  *  			1.0.0   |		实现基本功能
@@ -11,6 +11,7 @@
  *  			1.1.1   |       将任务修改为定时器调用方式，周期控制更加精准
  *  			1.2.0   |       新增8字校准法，使用EEPROM保存校准数据
  *  			1.3.0   |       新增数据互斥访问功能
+ *  			1.3.1   |       修改姿态解算方式为原版madgwick
  *
  *
  *  @note
@@ -358,7 +359,7 @@ void app_attitude_task(void *args) {
 
         OSSemPend(sem_attitude_data, OS_TICKS(2), &err);
 //        driver_gy86_Attitude_Update_Madgwick();
-        AHRS_MadgWickTest(&attitude, imu_calibrated_data.acc, imu_calibrated_data.gyro, mag_calibrated_data);
+        AHRS_MadgWick(&attitude, imu_calibrated_data.acc, imu_calibrated_data.gyro, mag_calibrated_data);
 //        driver_gy86_Attitude_Update_Mahony();
         OSSemPost(sem_attitude_data);
         OS_TRACE_MARKER_STOP(2);

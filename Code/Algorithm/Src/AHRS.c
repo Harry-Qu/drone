@@ -5,10 +5,11 @@
  *              提供了四元数转换角度的方法
  *  @author     Harry-Qu
  *  @date       2022/10/26
- *  @version    1.1
+ *  @version    1.1.1
  *  @par        日志
  *              1.0     |       实现姿态解算基本功能
  *              1.1     |       新增四元数初始化功能
+ *              1.1.1   |       修改四元数转欧拉角代码，角度符合右手螺旋方向
 */
 
 #include "AHRS.h"
@@ -43,7 +44,7 @@ static float AHRS_dynamicBeta(float step) {
  * @param step 步长
  * @return k
  */
-static float AHRS_MadgWick_DynamicK(float step) {
+static float AHRS_dynamicK(float step) {
     if (step < 0.5f) {
         return 0.8f;
     }
@@ -279,7 +280,7 @@ void AHRS_MadgWickTest(quat_t *q, vector3f_t a, vector3f_t g, vector3f_t m) {
 //        printf("stepSize:%.2f\n", stepSize);
 
         // β * ▽S(Q₀) / |▽S(Q₀)|
-        k = AHRS_MadgWick_DynamicK(stepSize);
+        k = AHRS_dynamicK(stepSize);
         qDot1 -= k * s0;
         qDot2 -= k * s1;
         qDot3 -= k * s2;
@@ -419,11 +420,11 @@ void AHRS_ConvertQuatToDegree(quat_t *q, vector3f_t *angle) {
 
     float tmp = 2.0f * q->b * q->d - 2.0f * q->a * q->c;
     LIMIT(tmp, -1.0f, 1.0f);
-    angle->y = asinf(tmp) * RAD_TO_DEGREE;
+    angle->y = -asinf(tmp) * RAD_TO_DEGREE;
     angle->x =
-            -atan2f(2.0f * q->a * q->b + 2.0f * q->c * q->d, 2.0f * SQR(q->a) - 1 + 2.0f * SQR(q->d)) * RAD_TO_DEGREE;
+            atan2f(2.0f * q->a * q->b + 2.0f * q->c * q->d, 2.0f * SQR(q->a) - 1 + 2.0f * SQR(q->d)) * RAD_TO_DEGREE;
     angle->z =
-            -atan2f(2.0f * q->a * q->d + 2.0f * q->b * q->c, 2.0f * SQR(q->a) - 1 + 2.0f * SQR(q->b)) * RAD_TO_DEGREE;
+            atan2f(2.0f * q->a * q->d + 2.0f * q->b * q->c, 2.0f * SQR(q->a) - 1 + 2.0f * SQR(q->b)) * RAD_TO_DEGREE;
 }
 
 void AHRS_InitQuat_MAG(quat_t *q, vector3f_t m) {

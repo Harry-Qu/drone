@@ -73,6 +73,6 @@ void PID_getArgString(pid_type *pid, char *strs) {
     if (pid == NULL){
         return;
     }
-    sprintf(strs, "p=%.2f i=%.2f d=%.2f iL=%.2f\n", pid->kp, pid->ki, pid->kd, pid->integralLimit);
+    sprintf(strs, "p=%.2f i=%.2f d=%.2f iL=%.2f", pid->kp, pid->ki, pid->kd, pid->integralLimit);
 }
 

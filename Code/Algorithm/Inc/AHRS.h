@@ -5,10 +5,11 @@
  *              提供了四元数转换角度的方法
  *  @author     Harry-Qu
  *  @date       2022/10/26
- *  @version    1.1
+ *  @version    1.1.1
  *  @par        日志
  *              1.0     |       实现姿态解算基本功能
  *              1.1     |       新增四元数初始化功能
+ *              1.1.1   |       修改四元数转欧拉角代码，角度符合右手螺旋方向
 */
 
 #ifndef GY86_AHRS_H
@@ -54,7 +55,7 @@ void AHRS_Mahony(quat_t *q, vector3f_t a, vector3f_t g, vector3f_t m);
 
 /**
  * 将四元数转换为欧拉角
- * @details 按照ZYX顺序转换，绕着坐标轴逆时针旋转为角度的负方向，即右手螺旋方向为角度负方向
+ * @details 按照ZYX顺序转换，绕着坐标轴逆时针旋转为角度的正方向，即右手螺旋方向为角度正方向
  * @param q 四元数
  * @param angle 角度（结果）
  */

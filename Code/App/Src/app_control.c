@@ -3,12 +3,13 @@
  *  @details    提供控制相关任务，包含对遥控器数据解算，计算期望角度，PID计算，动能分配，输出PWM
  *  @author     Harry-Qu
  *  @date       2022/10/28
- *  @version    1.1
+ *  @version    1.1.1
  *  @par        日志
  *                  1.0.0   |   实现基本控制功能
  *                  1.0.1   |   新增限制最大转速功能
  *                  1.0.2   |   修改电机转速测试代码中满油门值为限制最大转速值
  *                  1.1     |   新增数据互斥访问功能
+ *                  1.1.1   |   修改遥控目标角度方向为右手螺旋方向
 */
 
 /**
@@ -235,47 +236,51 @@ void app_control_cal_motorSpeed_moving(void) {
 
 //    绕着坐标轴逆时针旋转为角度的负方向
     uint8_t err;
-    OSSemPend(sem_attitude_data, OS_TICKS(3), &err);
+
 
 
 //TODO 待实机测试
-    targetRoll = -MAX_ROLL_ANGLE * ((float) rc_data.ch0 / DRIVER_DBUS_RC_CH_MAX);
-    targetPitch = -MAX_PITCH_ANGLE * ((float) rc_data.ch1 / DRIVER_DBUS_RC_CH_MAX);
-    targetYawSpeed = MAX_YAW_SPEED * ((float) rc_data.ch2 / DRIVER_DBUS_RC_CH_MAX);
+    targetRoll = MAX_ROLL_ANGLE * ((float) rc_data.ch0 / DRIVER_DBUS_RC_CH_MAX);
+    targetPitch = MAX_PITCH_ANGLE * ((float) rc_data.ch1 / DRIVER_DBUS_RC_CH_MAX);
+    targetYawSpeed = -MAX_YAW_SPEED * ((float) rc_data.ch2 / DRIVER_DBUS_RC_CH_MAX);
     targetVerticalSpeed = MAX_VERTICAL_SPEED * ((float) rc_data.ch3 / DRIVER_DBUS_RC_CH_MAX);
 
-//    pid_setCurrent(pidRollOuter, attitudeAngle.x);
-//    pid_setTarget(pidRollOuter, targetRoll);
-//    pid_setCurrent(pidRollInner, imu_gyro_avg_data.x);
-//    pid_setTarget(pidRollInner, PID_calculate(&pidRollOuter));
-//    wx = PID_calculate(&pidRollInner);
+    OSSemPend(sem_attitude_data, OS_TICKS(3), &err);
+    OSSemPend(sem_pid_data, OS_TICKS(3), &err);
 
-    OSSemPend(sem_pid_data, 10, &err);
+    pid_setCurrent(pidRollOuter, attitudeAngle.x);
+    pid_setTarget(pidRollOuter, targetRoll);
+    pid_setCurrent(pidRollInner, imu_gyro_avg_data.x);
+    pid_setTarget(pidRollInner, PID_calculate(&pidRollOuter));
+    wx = PID_calculate(&pidRollInner);
+
+
     pid_setCurrent(pidPitchOuter, attitudeAngle.y);
     pid_setTarget(pidPitchOuter, targetPitch);
     pid_setCurrent(pidPitchInner, imu_gyro_avg_data.y);
-    pid_setTarget(pidPitchInner, 0);
+    pid_setTarget(pidPitchInner, PID_calculate(&pidPitchOuter));
     wy = PID_calculate(&pidPitchInner);
-    OSSemPost(sem_pid_data);
+
 //    printf("%.2f\n", wy);
 
-//    pid_setCurrent(pidYaw, imu_gyro_avg_data.z);
-//    pid_setTarget(pidYaw, targetYawSpeed);
-//    wz = PID_calculate(&pidYaw);
+    pid_setCurrent(pidYaw, imu_gyro_avg_data.z);
+    pid_setTarget(pidYaw, targetYawSpeed);
+    wz = PID_calculate(&pidYaw);
 
 
     //TODO 高度环
-//    pid_setTarget(pidHeight, targetVerticalSpeed);
-//    wh = targetVerticalSpeed * 5;
+    pid_setTarget(pidHeight, targetVerticalSpeed);
+    pid_setCurrent(pidHeight, 0);
+    wh = PID_calculate(&pidHeight);
 
-//    motorSpeed[0] = motorSpeed[1] = motorSpeed[2] = motorSpeed[3] = 0;
+    OSSemPost(sem_pid_data);
 
     OSSemPost(sem_attitude_data);
 
-    motorSpeed[MOTOR_FL] = HOVER_MOTOR_SPEED - wx - wy - wz + wh;
-    motorSpeed[MOTOR_FR] = HOVER_MOTOR_SPEED + wx - wy + wz + wh;
-    motorSpeed[MOTOR_BL] = HOVER_MOTOR_SPEED - wx + wy + wz + wh;
-    motorSpeed[MOTOR_BR] = HOVER_MOTOR_SPEED + wx + wy - wz + wh;
+    motorSpeed[MOTOR_FL] = HOVER_MOTOR_SPEED + wx - wy - wz + wh;
+    motorSpeed[MOTOR_FR] = HOVER_MOTOR_SPEED - wx - wy + wz + wh;
+    motorSpeed[MOTOR_BL] = HOVER_MOTOR_SPEED + wx + wy + wz + wh;
+    motorSpeed[MOTOR_BR] = HOVER_MOTOR_SPEED - wx + wy - wz + wh;
 
 }
 

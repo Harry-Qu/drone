@@ -55,7 +55,7 @@ void app_debug_pid_storage() {
         }pidData;
         driver_at24c0x_readData_page(3, opAddress, &pidData, 16);
         char msg[40];
-        sprintf(msg, "p=%.2f i=%.2f d=%.2f iL=%.2f\n", pidData.p, pidData.i, pidData.d, pidData.l);
+        sprintf(msg, "*p=%.2f i=%.2f d=%.2f iL=%.2f", pidData.p, pidData.i, pidData.d, pidData.l);
         app_debug_ano_log(msg);
         readTask = 0;
     }

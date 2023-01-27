@@ -17,7 +17,7 @@
 #include "AHRS.h"
 #include "app_control.h"
 
-static char replyMsg[100];
+static char replyMsg[ANO_MAX_LENGTH];
 static uint8_t isReply;
 
 extern float debugMagExpectLength, debugMagFactLength;
@@ -26,8 +26,70 @@ extern OS_EVENT *sem_pid_data, *sem_attitude_data;
 extern vector3f_t imu_gyro_avg_data;
 
 void app_debug_ano_log(char *msg) {
+    if (strlen(msg) > ANO_MAX_LENGTH - 1) {
+        msg[ANO_MAX_LENGTH - 1] = '\0';
+    }
     strcpy(replyMsg, msg);
     isReply = 1;
+}
+
+static void app_debug_ano_transmitPid(pid_type *pid) {
+    struct {
+        int32_t piIntegral;
+        int32_t pidOut;
+        int32_t pidPOut;
+        int32_t pidIOut;
+        int32_t pidDOut;
+        int32_t pidTarget;
+    } sendData;
+    uint8_t err;
+
+    OSSemPend(sem_pid_data, 10, &err);
+    sendData.piIntegral = (int32_t) (pid->integral * 1000);
+    sendData.pidOut = (int32_t) (pid->out * 1000);
+    sendData.pidPOut = (int32_t) (pid->pOut * 1000);
+    sendData.pidIOut = (int32_t) (pid->iOut * 1000);
+    sendData.pidDOut = (int32_t) (pid->dOut * 1000);
+    sendData.pidTarget = (int32_t) (pid->target * 1000);
+    OSSemPost(sem_pid_data);
+    sdk_ano_transmit_custom_data(0xF9, 24, (uint8_t *) &sendData);
+}
+
+static void app_debug_ano_transmitMag() {
+    struct {
+        int16_t magFactLength;
+        int16_t magExpectLength;
+        uint16_t magDeltaLength;
+    } sendData;
+
+    sendData.magFactLength = (int16_t) (debugMagFactLength * 10000);
+    sendData.magExpectLength = (int16_t) (debugMagExpectLength * 10000);
+//    printf("%.2f ", fabsf(debugMagFactLength - debugMagExpectLength));
+    sendData.magDeltaLength = (uint16_t) (fabsf(debugMagFactLength - debugMagExpectLength) * 10000);
+    sdk_ano_transmit_custom_data(0xF8, 6, (uint8_t *) &sendData);
+
+}
+
+static void app_debug_ano_transmitAttitude() {
+    struct {
+        int16_t roll;
+        int16_t pitch;
+        int16_t yaw;
+        int16_t step;
+    } sendData;
+
+    sendData.roll = (int16_t) (attitudeAngle.x * 100);
+    sendData.pitch = (int16_t) (attitudeAngle.y * 100);
+    sendData.yaw = (int16_t) (attitudeAngle.z * 100);
+    sendData.step = (int16_t) (stepSize * 100);
+    sdk_ano_transmit_custom_data(0xF6, 8, (uint8_t *) &sendData);
+}
+
+static void app_debug_ano_transmitLog() {
+    if (isReply) {
+        isReply = 0;
+        sdk_ano_transmit_log_string(1, replyMsg);
+    }
 }
 
 void app_debug_ano(void) {
@@ -35,7 +97,8 @@ void app_debug_ano(void) {
 //    driver_gy86_TransmitAttitude_Quat(&attitude);
     uint8_t err;
 
-    app_control_transmitMotorSpeed();
+//    app_control_transmitMotorSpeed();//14B
+//    OSTimeDly(OS_TICKS(7));
 //    driver_MPU6050_TransmitCalibratedData();
 
     struct {
@@ -60,75 +123,26 @@ void app_debug_ano(void) {
 
     send_calibrated_data.SHOCK_STA = 0;
 
-    sdk_ano_transmit_inertial_sensor_data(&send_calibrated_data);
+//    sdk_ano_transmit_inertial_sensor_data(&send_calibrated_data);//19B
+//
+//    OSTimeDly(OS_TICKS(10));
 
 //    AHRS_ConvertQuatToDegree(&attitudeTest, &attitudeAngleTest);
-    driver_gy86_TransmitAttitude_Angle(&attitudeAngle);
+    driver_gy86_TransmitAttitude_Angle(&attitudeAngle);//13B
+    OSTimeDly(OS_TICKS(2));
 //    driver_HMC5883_TransmitCalibratedData_Custom();
 
-    if (isReply) {
-        isReply = 0;
-        sdk_ano_transmit_log_string(1, replyMsg);
-    }
-
-    struct {
-        int16_t piIntegral;
-        int16_t pidOut;
-        int16_t pidPOut;
-        int16_t pidIOut;
-        int16_t pidDOut;
-    } sendData;
-
-    OSSemPend(sem_pid_data, 10, &err);
-    sendData.piIntegral = (int16_t) (pidPitchInner.integral * 100);
-    sendData.pidOut = (int16_t) (pidPitchInner.out * 100);
-    sendData.pidPOut = (int16_t) (pidPitchInner.pOut * 100);
-    sendData.pidIOut = (int16_t) (pidPitchInner.iOut * 100);
-    sendData.pidDOut = (int16_t) (pidPitchInner.dOut * 100);
-    OSSemPost(sem_pid_data);
-    sdk_ano_transmit_custom_data(0xF9, 10, (uint8_t *) &sendData);
+    app_debug_ano_transmitLog();
 
 
-    sdk_ano_transmit_refresh_frame();
+    app_debug_ano_transmitPid(&pidRollOuter);//30B
+    OSTimeDly(OS_TICKS(5));
 
-//    struct {
-//        int16_t magFactLength;
-//        int16_t magExpectLength;
-//        uint16_t magDeltaLength;
-//    } sendData;
-//
-//    sendData.magFactLength = (int16_t) (debugMagFactLength * 10000);
-//    sendData.magExpectLength = (int16_t) (debugMagExpectLength * 10000);
-//    printf("%.2f ",fabsf(debugMagFactLength - debugMagExpectLength));
-//    sendData.magDeltaLength = (uint16_t) (fabsf(debugMagFactLength - debugMagExpectLength) * 10000);
-//    sdk_ano_transmit_custom_data(0xF8, 6, (uint8_t *) &sendData);
-
-//    struct {
-//        int16_t roll;
-//        int16_t pitch;
-//        int16_t yaw;
-//        int16_t step;
-//    } sendData;
-//
-//    sendData.roll = (int16_t) (attitudeAngle.x * 100);
-//    sendData.pitch = (int16_t) (attitudeAngle.y * 100);
-//    sendData.yaw = (int16_t) (attitudeAngle.z * 100);
-//    sendData.step = (int16_t) (stepSize * 100);
-//    sdk_ano_transmit_custom_data(0xF6, 8, (uint8_t *) &sendData);
-
-//    struct {
-//        int16_t roll;
-//        int16_t pitch;
-//        int16_t yaw;
-//    } sendData2;
-//
-//    sendData2.roll = (int16_t) (attitudeAngleTest2.x * 100);
-//    sendData2.pitch = (int16_t) (attitudeAngleTest2.y * 100);
-//    sendData2.yaw = (int16_t) (attitudeAngleTest2.z * 100);
-//    sdk_ano_transmit_custom_data(0xF7, 6, (uint8_t *) &sendData2);
-//    printf("%.2f\n", attitudeTest2.a);
-
+//    app_debug_ano_transmitMag();
+//    app_debug_ano_transmitAttitude();
 //    driver_HMC5883_TransmitRawAndCalibratedData_Custom();
+
+    sdk_ano_transmit_refresh_frame();//6B
 }
 
 

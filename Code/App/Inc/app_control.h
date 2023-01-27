@@ -23,44 +23,44 @@
 #define MOTOR_BR 0
 #define MOTOR_BL 3
 
-#define HOVER_MOTOR_SPEED 3400 //悬停时电机转速，3400/10000
+#define HOVER_MOTOR_SPEED 3400 //悬停时电机转速，3500/10000
 #define IDLE_MOTOR_SPEED 800  //怠速时电机速度
-#define LIMIT_MOTOR_SPEED 6000 //限制最高转速
+#define LIMIT_MOTOR_SPEED 7000 //限制最高转速
 
-#define MAX_ROLL_ANGLE 25.0f    //最大横滚角度（角度制） degree
-#define MAX_PITCH_ANGLE 25.0f   //最大俯仰角度（角度制） degree
+#define MAX_ROLL_ANGLE 5.0f    //最大横滚角度（角度制） degree
+#define MAX_PITCH_ANGLE 5.0f   //最大俯仰角度（角度制） degree
 
 #define MAX_VERTICAL_SPEED 3.0f      //最大上升速度（m/s）
-#define MAX_YAW_SPEED 30.0f     //最大旋转角速度（degree/s
+#define MAX_YAW_SPEED 1.0f     //最大旋转角速度（rad/s）
 
 //  PID参数
 
-#define PID_ROLL_OUTER_KP 0.1f
-#define PID_ROLL_OUTER_KI 0.0f
-#define PID_ROLL_OUTER_KD 0.0f
-#define PID_ROLL_OUTER_INTEGRAL_LIMIT 0.0f
+#define PID_ROLL_OUTER_KP 0.04f
+#define PID_ROLL_OUTER_KI 0.001f
+#define PID_ROLL_OUTER_KD 0.03f
+#define PID_ROLL_OUTER_INTEGRAL_LIMIT 30.0f
 
-#define PID_ROLL_INNER_KP 0.1f
-#define PID_ROLL_INNER_KI 0.0f
-#define PID_ROLL_INNER_KD 0.0f
-#define PID_ROLL_INNER_INTEGRAL_LIMIT 0.0f
+#define PID_ROLL_INNER_KP 1350.0f
+#define PID_ROLL_INNER_KI 26.0f
+#define PID_ROLL_INNER_KD 800.0f
+#define PID_ROLL_INNER_INTEGRAL_LIMIT 18.0f
 
-#define PID_PITCH_OUTER_KP 0.0f
-#define PID_PITCH_OUTER_KI 0.0f
-#define PID_PITCH_OUTER_KD 0.0f
-#define PID_PITCH_OUTER_INTEGRAL_LIMIT 0.0f
+#define PID_PITCH_OUTER_KP 0.03f
+#define PID_PITCH_OUTER_KI 0.001f
+#define PID_PITCH_OUTER_KD 0.02f
+#define PID_PITCH_OUTER_INTEGRAL_LIMIT 50.0f
 
-#define PID_PITCH_INNER_KP 0.1f
-#define PID_PITCH_INNER_KI 0.0f
-#define PID_PITCH_INNER_KD 0.0f
-#define PID_PITCH_INNER_INTEGRAL_LIMIT 0.0f
+#define PID_PITCH_INNER_KP 2630.0f
+#define PID_PITCH_INNER_KI 15.0f
+#define PID_PITCH_INNER_KD 2500.0f
+#define PID_PITCH_INNER_INTEGRAL_LIMIT 20.0f
 
-#define PID_YAW_KP 0.5f
+#define PID_YAW_KP 6500.0f
 #define PID_YAW_KI 0.0f
 #define PID_YAW_KD 0.0f
 #define PID_YAW_INTEGRAL_LIMIT 0.0f
 
-#define PID_HEIGHT_KP 0.5f
+#define PID_HEIGHT_KP 250.0f
 #define PID_HEIGHT_KI 0.0f
 #define PID_HEIGHT_KD 0.0f
 #define PID_HEIGHT_INTEGRAL_LIMIT 0.0f
